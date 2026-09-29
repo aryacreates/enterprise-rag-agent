@@ -1,3 +1,6 @@
+<img width="937" height="398" alt="image" src="https://github.com/user-attachments/assets/fa522d65-d924-418c-9e59-0fa9cecde8a1" />
+
+
 # Enterprise RAG Agent
 
 A local-first enterprise RAG agent demonstrating production-inspired GenAI engineering patterns including retrieval-augmented generation, tool orchestration, role-based access control, audit logging, and prompt-injection defenses.
