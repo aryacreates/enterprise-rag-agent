@@ -1,128 +1,198 @@
-# Enterprise RAG Agent — Secure Support Copilot
+# Enterprise RAG Agent
 
-A local-first enterprise support assistant that combines retrieval-augmented generation, controlled tools, RBAC, audit logging and a browser dashboard.
+A local-first enterprise RAG agent designed to demonstrate production-oriented GenAI engineering patterns including retrieval-augmented generation, tool orchestration, role-based access control, audit logging, and prompt-injection defenses.
 
-**Portfolio scope:** this is a demonstrator of enterprise AI engineering patterns; it is not presented as a production SaaS deployment.
+## Overview
 
-## What the project demonstrates
+This project demonstrates how an enterprise AI assistant can securely answer questions from internal knowledge while controlling access to protected resources and recording agent activity for auditability.
 
-- Retrieval over internal policy/product content
-- LLM adapter with deterministic mock mode and optional local Ollama inference
-- Tool-oriented agent workflow: knowledge search, ticket lookup and controlled ticket creation
-- Role-aware permissions (`viewer`, `support`, `admin`)
-- Retrieval boundary intended to reduce prompt-injection propagation
-- Request IDs and audit records
-- Health/metrics endpoints
-- FastAPI + OpenAPI
-- Responsive browser dashboard with execution/evidence visibility
-- Automated tests
+The application is designed to run locally without requiring AWS, Google Cloud, Azure, or paid AI APIs.
+
+## Key Features
+
+* Retrieval-Augmented Generation (RAG)
+* Agent and tool orchestration
+* Role-Based Access Control (RBAC)
+* Prompt-injection detection and defenses
+* Audit logging
+* FastAPI backend
+* Interactive web UI
+* Docker support
+* Automated tests
+* Local LLM support through Ollama
+* Mock mode for running without an LLM
 
 ## Architecture
 
-```mermaid
-flowchart TD
-    UI[Support Dashboard] --> API[FastAPI]
-    API --> AUTH[Identity + RBAC]
-    AUTH --> AGENT[Agent Planner]
-    AGENT --> RET[Retriever]
-    AGENT --> TICKET[Ticket Tools]
-    AGENT --> LLM[LLM Adapter]
-    RET --> DOCS[(Local Knowledge Base)]
-    TICKET --> DB[(SQLite)]
-    API --> AUDIT[Audit Log]
+```text
+                 ┌─────────────────────┐
+                 │       Web UI        │
+                 └──────────┬──────────┘
+                            │
+                            ▼
+                 ┌─────────────────────┐
+                 │     FastAPI API     │
+                 └──────────┬──────────┘
+                            │
+             ┌──────────────┼──────────────┐
+             ▼              ▼              ▼
+        ┌─────────┐   ┌───────────┐   ┌──────────┐
+        │  RBAC   │   │ RAG Engine│   │  Agent   │
+        └─────────┘   └─────┬─────┘   │  Tools   │
+                            │         └────┬─────┘
+                            ▼              │
+                     ┌────────────┐        │
+                     │ Knowledge  │        │
+                     │   Base     │        │
+                     └────────────┘        │
+                                           ▼
+                                    ┌─────────────┐
+                                    │ Audit Logs  │
+                                    └─────────────┘
+
+                         ┌──────────────────┐
+                         │ Local LLM/Ollama │
+                         └──────────────────┘
 ```
 
-## Security model
+## Security
 
-1. User identity is represented by the request/UI user context.
-2. Tool permissions are checked before sensitive actions.
-3. Retrieved text is treated as **data**, not as trusted instructions.
-4. Ticket creation is a controlled capability rather than arbitrary code execution.
-5. Audit events provide a trace of important actions.
+The project demonstrates several enterprise AI security concepts:
 
-For a production deployment, extend this with an external identity provider, tenant isolation, encrypted storage, secret management, rate limiting, policy-as-code, centralized logs and stronger adversarial evaluation.
+* Role-based access control
+* Input validation
+* Prompt-injection detection
+* Restricted tool execution
+* Audit logging
+* Separation of retrieved context from executable instructions
 
-## Run locally
+The security controls are implemented as a portfolio demonstration and should be hardened further before production deployment.
 
-### Zero-cost mock mode
+## RAG Pipeline
+
+```text
+User Query
+    ↓
+Input Validation
+    ↓
+Security Checks
+    ↓
+Document Retrieval
+    ↓
+Relevant Context
+    ↓
+Agent / LLM
+    ↓
+Response + Sources
+    ↓
+Audit Event
+```
+
+## Tech Stack
+
+* Python
+* FastAPI
+* Pydantic
+* Retrieval-Augmented Generation
+* Agent/tool orchestration
+* Ollama
+* Docker
+* HTML/CSS/JavaScript
+* Pytest
+
+## Running Locally
+
+### 1. Clone the repository
+
+```bash
+git clone https://github.com/YOUR_USERNAME/enterprise-rag-agent.git
+cd enterprise-rag-agent
+```
+
+### 2. Create a virtual environment
+
+Windows:
 
 ```bash
 python -m venv .venv
-# Windows: .venv\\Scripts\\activate
-# Linux/macOS: source .venv/bin/activate
+.venv\Scripts\activate
+```
+
+Linux/macOS:
+
+```bash
+python -m venv .venv
+source .venv/bin/activate
+```
+
+### 3. Install dependencies
+
+```bash
 pip install -r requirements.txt
-python -m app.ingest
-set LLM_MODE=mock
-# PowerShell: $env:LLM_MODE="mock"
-# Linux/macOS: export LLM_MODE=mock
+```
+
+### 4. Start the application
+
+```bash
 uvicorn app.main:app --reload
 ```
 
-Open `http://127.0.0.1:8000` and API docs at `http://127.0.0.1:8000/docs`.
+Open:
 
-### Optional local model
-
-Install Ollama and pull a model supported by your machine. Configure the model through the environment variables used by `app/llm.py`.
-
-No AWS/GCP/Azure account is required.
-
-## Demo flow
-
-1. Select `viewer`, `support`, or `admin` in the dashboard.
-2. Ask a policy/product question.
-3. Inspect retrieved evidence.
-4. Inspect the agent/tool trace.
-5. Try a privileged ticket operation with an insufficient role and observe the policy boundary.
-6. Review the resulting audit information.
-
-## Example API checks
-
-```bash
-curl http://127.0.0.1:8000/health
-curl http://127.0.0.1:8000/metrics
+```text
+http://127.0.0.1:8000
 ```
 
-Use `/docs` for the exact request schemas exposed by the application.
+API documentation:
 
-## Evaluation / tests
-
-```bash
-python -m pytest -q
+```text
+http://127.0.0.1:8000/docs
 ```
 
-The tests focus on deterministic API behavior and permission boundaries. A production extension would add a labeled RAG evaluation set covering retrieval recall, groundedness, refusal behavior, tool authorization and latency.
+## Testing
 
-## Design trade-offs
+Run:
 
-| Decision | Why |
-|---|---|
-| Local lightweight retrieval | Zero-cost, reproducible demo without a hosted vector DB |
-| Ollama adapter | Local inference while keeping the model boundary replaceable |
-| SQLite | Simple persistence and audit demonstration |
-| Controlled tools | Safer than exposing arbitrary code execution |
-| Mock mode | Deterministic tests and demos without model downloads |
+```bash
+pytest -q
+```
 
-## Resume bullets
+The repository includes automated tests covering the core application behavior.
 
-- Built a **local-first enterprise RAG support agent** with FastAPI, role-based tool permissions, retrieval grounding, audit logging and a responsive operations dashboard.
-- Implemented a **controlled agent/tool boundary** for knowledge search and ticket workflows, treating retrieved content as untrusted data and enforcing least-privilege actions.
-- Added deterministic mock inference, automated tests, Docker support and OpenAPI documentation to make the AI workflow reproducible and portable.
+## Optional Local LLM
 
-## Interview questions to prepare
+The application can be connected to a locally running Ollama model for inference.
 
-- Why RAG instead of putting all documents in the prompt?
-- How would you prevent cross-tenant retrieval?
-- What happens when retrieved text contains malicious instructions?
-- How would you evaluate groundedness and retrieval quality?
-- How would you replace local inference with a managed model endpoint?
-- Which actions should require human approval?
+This keeps experimentation local and avoids requiring a paid cloud AI API.
 
-## Screenshot checklist for GitHub
+The project also supports mock mode so the application can be demonstrated without downloading a model.
 
-After running the UI, add 2–3 images under `docs/images/`:
+## Engineering Focus
 
-- `dashboard.png` — main support dashboard
-- `trace.png` — agent/tool execution trace
-- `rbac.png` — permission boundary demonstration
+This project was intentionally designed around enterprise GenAI engineering concerns rather than only demonstrating a chatbot.
 
-Do not upload secrets, API keys or private customer data.
+It focuses on:
+
+* Security
+* Governance
+* Retrieval quality
+* Controlled tool execution
+* Observability
+* API design
+* Local deployment
+* Testability
+
+## Why This Project
+
+The project explores the architecture required to move from a basic LLM chatbot toward an enterprise AI assistant capable of working with protected knowledge and controlled tools.
+
+## Future Improvements
+
+* Replace the local retrieval layer with Qdrant
+* Add streaming responses
+* Add LLM/RAG evaluation datasets
+* Add OpenTelemetry tracing
+* Add more granular policy enforcement
+* Add PostgreSQL persistence
+* Add Kubernetes deployment manifests
+* Add optional cloud deployment adapters
