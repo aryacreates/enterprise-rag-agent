@@ -1,10 +1,10 @@
 # Enterprise RAG Agent
 
-A local-first enterprise RAG agent designed to demonstrate production-oriented GenAI engineering patterns including retrieval-augmented generation, tool orchestration, role-based access control, audit logging, and prompt-injection defenses.
+A local-first enterprise RAG agent demonstrating production-inspired GenAI engineering patterns including retrieval-augmented generation, tool orchestration, role-based access control, audit logging, and prompt-injection defenses.
 
 ## Overview
 
-This project demonstrates how an enterprise AI assistant can securely answer questions from internal knowledge while controlling access to protected resources and recording agent activity for auditability.
+This project demonstrates how an enterprise AI assistant can answer questions from internal knowledge while applying access controls, restricting tool execution, and recording agent activity for auditability.
 
 The application is designed to run locally without requiring AWS, Google Cloud, Azure, or paid AI APIs.
 
@@ -15,12 +15,14 @@ The application is designed to run locally without requiring AWS, Google Cloud, 
 * Role-Based Access Control (RBAC)
 * Prompt-injection detection and defenses
 * Audit logging
+* Input validation
+* Controlled tool execution
 * FastAPI backend
 * Interactive web UI
 * Docker support
 * Automated tests
-* Local LLM support through Ollama
-* Mock mode for running without an LLM
+* Local LLM inference through Ollama
+* Mock mode for reproducible execution
 
 ## Architecture
 
@@ -38,22 +40,45 @@ The application is designed to run locally without requiring AWS, Google Cloud, 
              ▼              ▼              ▼
         ┌─────────┐   ┌───────────┐   ┌──────────┐
         │  RBAC   │   │ RAG Engine│   │  Agent   │
-        └─────────┘   └─────┬─────┘   │  Tools   │
-                            │         └────┬─────┘
-                            ▼              │
-                     ┌────────────┐        │
-                     │ Knowledge  │        │
-                     │   Base     │        │
-                     └────────────┘        │
-                                           ▼
-                                    ┌─────────────┐
-                                    │ Audit Logs  │
-                                    └─────────────┘
+        │         │   │           │   │  Tools   │
+        └─────────┘   └─────┬─────┘   └────┬─────┘
+                            │              │
+                            ▼              ▼
+                     ┌────────────┐   ┌─────────────┐
+                     │ Knowledge  │   │ Audit Logs  │
+                     │   Base     │   └─────────────┘
+                     └────────────┘
 
                          ┌──────────────────┐
                          │ Local LLM/Ollama │
                          └──────────────────┘
 ```
+
+## RAG and Agent Workflow
+
+```text
+User Query
+    ↓
+Input Validation
+    ↓
+Security Checks
+    ↓
+Access Control
+    ↓
+Document Retrieval
+    ↓
+Relevant Context
+    ↓
+Agent / LLM
+    ↓
+Controlled Tool Execution
+    ↓
+Response + Sources
+    ↓
+Audit Event
+```
+
+The workflow separates retrieval, security checks, access control, and tool execution so that the assistant does not treat retrieved content as executable instructions.
 
 ## Security
 
@@ -65,28 +90,33 @@ The project demonstrates several enterprise AI security concepts:
 * Restricted tool execution
 * Audit logging
 * Separation of retrieved context from executable instructions
+* Controlled access to protected resources
 
-The security controls are implemented as a portfolio demonstration and should be hardened further before production deployment.
+The security controls are implemented as a portfolio demonstration. A production deployment would require additional identity management, secrets management, network controls, monitoring, policy enforcement, security testing, and governance.
 
 ## RAG Pipeline
 
+The retrieval workflow provides relevant knowledge to the agent before generating a response.
+
 ```text
-User Query
-    ↓
-Input Validation
-    ↓
-Security Checks
-    ↓
-Document Retrieval
-    ↓
-Relevant Context
-    ↓
-Agent / LLM
-    ↓
-Response + Sources
-    ↓
-Audit Event
+Query
+  ↓
+Validation
+  ↓
+Security Filtering
+  ↓
+Retrieval
+  ↓
+Relevant Documents
+  ↓
+Context Construction
+  ↓
+LLM / Agent
+  ↓
+Grounded Response
 ```
+
+The architecture is designed to keep retrieved knowledge separate from executable agent instructions and tools.
 
 ## Tech Stack
 
@@ -104,6 +134,8 @@ Audit Event
 
 ### 1. Clone the repository
 
+Replace `YOUR_USERNAME` with your GitHub username:
+
 ```bash
 git clone https://github.com/YOUR_USERNAME/enterprise-rag-agent.git
 cd enterprise-rag-agent
@@ -111,14 +143,14 @@ cd enterprise-rag-agent
 
 ### 2. Create a virtual environment
 
-Windows:
+**Windows:**
 
 ```bash
 python -m venv .venv
 .venv\Scripts\activate
 ```
 
-Linux/macOS:
+**Linux/macOS:**
 
 ```bash
 python -m venv .venv
@@ -137,62 +169,100 @@ pip install -r requirements.txt
 uvicorn app.main:app --reload
 ```
 
-Open:
+Open the application at:
 
 ```text
 http://127.0.0.1:8000
 ```
 
-API documentation:
+FastAPI documentation:
 
 ```text
 http://127.0.0.1:8000/docs
 ```
 
+## Optional Local LLM
+
+The application can use a locally running Ollama model for inference.
+
+This provides a local execution path without requiring a paid cloud AI API.
+
+Mock mode is also available for demonstrations and testing without downloading or running a local model.
+
+## Docker
+
+The project includes Docker support for containerized local execution.
+
+Build the image:
+
+```bash
+docker build -t enterprise-rag-agent .
+```
+
+Run the container:
+
+```bash
+docker run -p 8000:8000 enterprise-rag-agent
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8000
+```
+
 ## Testing
 
-Run:
+Run the automated test suite:
 
 ```bash
 pytest -q
 ```
 
-The repository includes automated tests covering the core application behavior.
-
-## Optional Local LLM
-
-The application can be connected to a locally running Ollama model for inference.
-
-This keeps experimentation local and avoids requiring a paid cloud AI API.
-
-The project also supports mock mode so the application can be demonstrated without downloading a model.
+The tests cover core application behavior and provide reproducible validation during development.
 
 ## Engineering Focus
 
-This project was intentionally designed around enterprise GenAI engineering concerns rather than only demonstrating a chatbot.
+This project focuses on enterprise GenAI engineering patterns rather than only demonstrating a basic chatbot.
 
-It focuses on:
+Key areas include:
 
-* Security
-* Governance
-* Retrieval quality
+* RAG architecture
+* Agent and tool orchestration
+* Security controls
+* RBAC
+* Prompt-injection defenses
+* Auditability
 * Controlled tool execution
-* Observability
 * API design
 * Local deployment
 * Testability
+* Governance considerations
 
-## Why This Project
+## Project Scope and Limitations
 
-The project explores the architecture required to move from a basic LLM chatbot toward an enterprise AI assistant capable of working with protected knowledge and controlled tools.
+This is a portfolio project designed to demonstrate enterprise AI architecture and engineering patterns.
+
+It does not claim:
+
+* Production deployment
+* Production-grade security certification
+* Real enterprise customer data
+* Production SLAs
+* Proprietary cloud deployment
+* Production-scale infrastructure
+
+A production implementation would require additional identity and access management, secrets management, observability, networking, infrastructure security, evaluation, governance, and operational controls.
 
 ## Future Improvements
 
 * Replace the local retrieval layer with Qdrant
 * Add streaming responses
-* Add LLM/RAG evaluation datasets
+* Add LLM and RAG evaluation datasets
 * Add OpenTelemetry tracing
 * Add more granular policy enforcement
 * Add PostgreSQL persistence
 * Add Kubernetes deployment manifests
 * Add optional cloud deployment adapters
+* Add automated retrieval-quality evaluation
+* Add stronger agent-policy enforcement
